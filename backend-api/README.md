@@ -17,7 +17,10 @@ npm install
 Create a `.env` file with:
 ```
 PORT=8080
+MONGO_URI=mongodb+srv://<user>:<pass>@cluster.mongodb.net/yourdb?retryWrites=true&w=majority
 GCS_BUCKET=your-gcs-bucket-name
+GCP_PROJECT_ID=your-gcp-project-id
+JWT_SECRET=super-secret
 GOOGLE_APPLICATION_CREDENTIALS=/workspace/service-account.json
 ```
 

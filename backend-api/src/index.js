@@ -2,8 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { connectDb } from './config/db.js';
+import authRouter from './routes/auth.js';
 
 import videosRouter from './routes/videos.js';
 import searchRouter from './routes/search.js';
@@ -20,6 +20,7 @@ app.use(morgan('dev'));
 
 app.get('/', (_req, res) => res.json({ status: 'ok', service: 'backend-api' }));
 
+app.use('/auth', authRouter);
 app.use('/videos', videosRouter);
 app.use('/search', searchRouter);
 app.use('/', logsRouter); // /log-error, /log-inspected-widget
@@ -29,8 +30,15 @@ app.use((err, _req, res, _next) => {
 	res.status(500).json({ error: 'Internal Server Error' });
 });
 
-app.listen(port, () => {
-	console.log(`API listening on :${port}`);
-});
+connectDb()
+	.then(() => {
+		app.listen(port, () => {
+			console.log(`API listening on :${port}`);
+		});
+	})
+	.catch((err) => {
+		console.error('Failed to connect DB', err);
+		process.exit(1);
+	});
 
 

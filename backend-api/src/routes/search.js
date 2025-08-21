@@ -1,39 +1,50 @@
 import { Router } from 'express';
-
-// naive in-memory dataset, will be fed by videos router
-import videosRouter from './videos.js';
+import Video from '../models/Video.js';
 
 const router = Router();
 
-router.get('/', (req, res) => {
-  const { q = '', filter = 'All', page = 1, pageSize = 15 } = req.query;
-  const query = String(q).toLowerCase();
-  const p = Number(page) || 1;
-  const ps = Number(pageSize) || 15;
+router.get('/', async (req, res, next) => {
+  try {
+    const { q = '', filter = 'All', page = 1, pageSize = 15 } = req.query;
+    const query = String(q).toLowerCase();
+    const p = Number(page) || 1;
+    const ps = Number(pageSize) || 15;
 
-  // Access the in-memory videos via import cache hack. In a real app use a DB.
-  const videosModule = requireModuleCache('./videos.js');
-  const all = videosModule?.videos || [];
+    const mongoQuery = {
+      $or: [
+        { title: { $regex: query, $options: 'i' } },
+        { channelName: { $regex: query, $options: 'i' } },
+      ],
+    };
 
-  const results = all.filter(v => {
-    const matches = String(v.title || '').toLowerCase().includes(query) || String(v.channelName || '').toLowerCase().includes(query);
-    if (filter === 'All') return matches;
-    if (filter === 'Videos') return matches; // all are videos in this demo
-    if (filter === 'Channels') return false; // no channels in this demo dataset
-    return false;
-  }).map(v => ({ ...v, type: 'video' }));
+    const results = await Video.find(mongoQuery)
+      .sort({ createdAt: -1 })
+      .skip((p - 1) * ps)
+      .limit(ps)
+      .lean();
 
-  const start = (p - 1) * ps;
-  return res.json(results.slice(start, start + ps));
+    return res.json(results.map(v => ({ ...toClientVideo(v), type: 'video' })));
+  } catch (err) {
+    return next(err);
+  }
 });
 
-function requireModuleCache(relPath) {
-  try {
-    const specifier = new URL(relPath, import.meta.url).href;
-    return global.__videoModuleCache;
-  } catch {
-    return null;
-  }
+function toClientVideo(v) {
+  return {
+    id: v.videoId,
+    title: v.title,
+    description: v.description,
+    visibility: v.visibility,
+    tags: v.tags,
+    category: v.category,
+    channelName: v.channelName,
+    channelAvatar: v.channelAvatar,
+    thumbnail: v.thumbnail,
+    videoUrl: v.videoUrl,
+    duration: v.duration,
+    views: String(v.views || 0),
+    uploadTime: v.createdAt,
+  };
 }
 
 export default router;
