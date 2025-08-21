@@ -7,7 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:web/web.dart' as web;
 
-var backendURL = "https://videoshar7994back.builtwithrocket.new/log-inspected-widget";
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+String get backendURL => dotenv.env['BACKEND_INSPECT_URL']?.trim() ?? "";
 
 class CustomWidgetInspector extends StatefulWidget {
   final Widget child;

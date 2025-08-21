@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../../core/app_export.dart';
+import 'package:file_picker/file_picker.dart';
 
 class UploadButtonWidget extends StatelessWidget {
   final Function(String) onVideoSelected;
@@ -150,18 +151,16 @@ class UploadButtonWidget extends StatelessWidget {
     );
   }
 
-  void _selectFromGallery() {
-    // Simulate gallery selection
-    Future.delayed(const Duration(milliseconds: 500), () {
-      onVideoSelected('/path/to/selected/video.mp4');
-    });
+  Future<void> _selectFromGallery() async {
+    final result = await FilePicker.platform.pickFiles(type: FileType.video, allowMultiple: false);
+    if (result != null && result.files.single.path != null) {
+      onVideoSelected(result.files.single.path!);
+    }
   }
 
   void _recordVideo() {
-    // Simulate video recording
-    Future.delayed(const Duration(milliseconds: 500), () {
-      onVideoSelected('/path/to/recorded/video.mp4');
-    });
+    // Optional: integrate camera plugin. For now, use file picker as placeholder.
+    _selectFromGallery();
   }
 
   @override

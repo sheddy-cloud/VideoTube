@@ -7,6 +7,8 @@ import './widgets/upload_button_widget.dart';
 import './widgets/upload_progress_widget.dart';
 import './widgets/upload_step_widget.dart';
 import './widgets/video_form_widget.dart';
+import '../../core/services/upload_service.dart';
+import 'package:dio/dio.dart';
 
 class UploadVideoScreen extends StatefulWidget {
   const UploadVideoScreen({super.key});
@@ -24,6 +26,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> with TickerProvid
   String? _selectedVideoPath;
   String? _errorMessage;
   bool _isPaused = false;
+  CancelToken? _cancelToken;
   
   // Form data
   final TextEditingController _titleController = TextEditingController();
@@ -32,19 +35,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> with TickerProvid
   String _visibility = 'Public';
   int _selectedThumbnailIndex = 0;
   
-  // Mock video data
-  final Map<String, dynamic> _mockVideoData = {
-    "fileName": "sample_video.mp4",
-    "size": "45.2 MB",
-    "duration": "2:34",
-    "format": "MP4",
-    "resolution": "1920x1080",
-    "thumbnails": [
-      "https://images.pexels.com/photos/1431822/pexels-photo-1431822.jpeg?auto=compress&cs=tinysrgb&w=300&h=169&fit=crop",
-      "https://images.pexels.com/photos/442576/pexels-photo-442576.jpeg?auto=compress&cs=tinysrgb&w=300&h=169&fit=crop",
-      "https://images.pexels.com/photos/164743/pexels-photo-164743.jpeg?auto=compress&cs=tinysrgb&w=300&h=169&fit=crop",
-    ]
-  };
+  Map<String, dynamic>? _selectedVideoMeta; // fileName, size, duration, format, resolution, thumbnails
 
   late AnimationController _progressAnimationController;
   late Animation<double> _progressAnimation;
@@ -71,6 +62,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> with TickerProvid
     _descriptionController.dispose();
     _tagsController.dispose();
     _progressAnimationController.dispose();
+    _cancelToken?.cancel('Disposed');
     super.dispose();
   }
 
@@ -79,6 +71,15 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> with TickerProvid
       _selectedVideoPath = videoPath;
       _errorMessage = null;
       _currentStep = 1;
+      // Minimal metadata from path; server can probe actual details after upload
+      _selectedVideoMeta = {
+        'fileName': videoPath.split('/').last,
+        'size': '--',
+        'duration': '--',
+        'format': 'MP4',
+        'resolution': '--',
+        'thumbnails': <String>[],
+      };
     });
   }
 
@@ -122,27 +123,37 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> with TickerProvid
       _uploadProgress = 0.0;
       _isPaused = false;
     });
-
-    // Simulate upload progress
-    for (int i = 0; i <= 100; i++) {
-      if (!_isPaused && _isUploading) {
-        await Future.delayed(const Duration(milliseconds: 100));
-        if (mounted) {
-          setState(() {
-            _uploadProgress = i / 100;
-            _estimatedTime = _calculateEstimatedTime(i);
-          });
-          _progressAnimationController.animateTo(_uploadProgress);
-        }
-      } else {
-        break;
-      }
-    }
-
-    if (_uploadProgress >= 1.0 && _isUploading) {
+    _cancelToken = CancelToken();
+    try {
+      final videoId = await UploadService.I.uploadVideo(
+        filePath: _selectedVideoPath!,
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        visibility: _visibility,
+        tags: _tagsController.text.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).toList(),
+        selectedThumbnailIndex: _selectedThumbnailIndex,
+        cancelToken: _cancelToken,
+        onProgress: (sent, total) {
+          if (total > 0 && mounted && _isUploading && !_isPaused) {
+            final p = sent / total;
+            setState(() {
+              _uploadProgress = p;
+              _estimatedTime = _calculateEstimatedTime((p * 100).round());
+            });
+            _progressAnimationController.animateTo(_uploadProgress);
+          }
+        },
+      );
+      if (!mounted) return;
       setState(() {
         _uploadCompleted = true;
         _isUploading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isUploading = false;
+        _errorMessage = 'Upload failed. Please try again.';
       });
     }
   }
@@ -165,6 +176,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> with TickerProvid
     setState(() {
       _isPaused = false;
     });
+    // Note: Resuming true HTTP upload requires server support; restart upload for now
     _startUpload();
   }
 
@@ -181,6 +193,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> with TickerProvid
     _descriptionController.clear();
     _tagsController.clear();
     _progressAnimationController.reset();
+    _cancelToken?.cancel('User cancelled');
   }
 
   void _retryUpload() {
@@ -406,7 +419,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> with TickerProvid
             SizedBox(height: 3.h),
             
             ThumbnailSelectorWidget(
-              thumbnails: (_mockVideoData['thumbnails'] as List).cast<String>(),
+              thumbnails: ((_selectedVideoMeta?['thumbnails'] as List?)?.cast<String>()) ?? const <String>[],
               selectedIndex: _selectedThumbnailIndex,
               onThumbnailSelected: (index) {
                 setState(() {
@@ -484,7 +497,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> with TickerProvid
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _mockVideoData['fileName'] as String,
+                  (_selectedVideoMeta?['fileName'] as String?) ?? '--',
                   style: AppTheme.lightTheme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -497,7 +510,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> with TickerProvid
                 Row(
                   children: [
                     Text(
-                      _mockVideoData['size'] as String,
+                      (_selectedVideoMeta?['size'] as String?) ?? '--',
                       style: AppTheme.lightTheme.textTheme.bodySmall?.copyWith(
                         color: AppTheme.lightTheme.colorScheme.onSurfaceVariant,
                       ),
@@ -514,7 +527,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> with TickerProvid
                     ),
                     
                     Text(
-                      _mockVideoData['duration'] as String,
+                      (_selectedVideoMeta?['duration'] as String?) ?? '--',
                       style: AppTheme.lightTheme.textTheme.bodySmall?.copyWith(
                         color: AppTheme.lightTheme.colorScheme.onSurfaceVariant,
                       ),
@@ -525,7 +538,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> with TickerProvid
                 SizedBox(height: 0.5.h),
                 
                 Text(
-                  '${_mockVideoData['format']} • ${_mockVideoData['resolution']}',
+                  '${(_selectedVideoMeta?['format'] as String?) ?? '--'} • ${(_selectedVideoMeta?['resolution'] as String?) ?? '--'}',
                   style: AppTheme.lightTheme.textTheme.bodySmall?.copyWith(
                     color: AppTheme.lightTheme.colorScheme.onSurfaceVariant,
                   ),

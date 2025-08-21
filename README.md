@@ -2,6 +2,18 @@
 
 A modern Flutter-based mobile application utilizing the latest mobile development technologies and tools for building responsive cross-platform applications.
 
+## Configuration
+
+Create a `.env` file in the project root (it's already listed under `assets` in `pubspec.yaml`):
+
+```
+API_BASE_URL=https://your-api.example.com
+BACKEND_LOG_URL=https://videoshar7994back.builtwithrocket.new/log-error
+BACKEND_INSPECT_URL=https://videoshar7994back.builtwithrocket.new/log-inspected-widget
+```
+
+The app will load data from the API. If the API is unreachable, it falls back to JSON files under `assets/`.
+
 ## 📋 Prerequisites
 
 - Flutter SDK (^3.29.2)

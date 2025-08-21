@@ -4,6 +4,7 @@ import 'package:sizer/sizer.dart';
 import '../../core/app_export.dart';
 import './widgets/filter_chip_widget.dart';
 import './widgets/search_result_card_widget.dart';
+import '../../core/services/video_service.dart';
 import './widgets/search_suggestion_widget.dart';
 
 class SearchResultsScreen extends StatefulWidget {
@@ -30,137 +31,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
   String _selectedFilter = 'All';
   String _currentQuery = '';
 
-  // Mock search results data
-  final List<Map<String, dynamic>> _mockSearchResults = [
-    {
-  "id": "1",
-  "title": "Flutter Tutorial: Building Beautiful UIs",
-  "channelName": "CodeMaster",
-  "channelAvatar": "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop",
-  "thumbnail": "https://images.pexels.com/photos/356056/pexels-photo-356056.jpeg?auto=compress&cs=tinysrgb&w=300&h=169&fit=crop",
-  "views": "1.2M",
-  "uploadTime": "2 days ago",
-
-  "duration": "15:42",
-  "type": "video"},
-    {
-  "id": "2",
-  "title": "React vs Flutter: Complete Comparison",
-  "channelName": "Tech Insights",
-  "channelAvatar": "https://images.pexels.com/photos/1040881/pexels-photo-1040881.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop",
-  "thumbnail": "https://images.pexels.com/photos/442576/pexels-photo-442576.jpeg?auto=compress&cs=tinysrgb&w=300&h=169&fit=crop",
-  "views": "856K",
-  "uploadTime": "1 week ago",
-
-  "duration": "22:15",
-  "type": "video"},
-    {
-  "id": "3",
-  "title": "Mobile App Development Bootcamp",
-  "channelName": "Dev Academy",
-  "channelAvatar": "https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop",
-  "thumbnail": "https://images.pexels.com/photos/574071/pexels-photo-574071.jpeg?auto=compress&cs=tinysrgb&w=300&h=169&fit=crop",
-  "views": "2.3M",
-  "uploadTime": "3 days ago",
-
-  "duration": "45:30",
-  "type": "video"},
-    {
-  "id": "4",
-  "title": "Programming Channel",
-  "channelName": "Programming Channel",
-  "channelAvatar": "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop",
-  "subscribers": "1.5M subscribers",
-
-  "description": "Learn programming with easy tutorials",
-  "type": "channel"},
-    {
-  "id": "5",
-  "title": "Advanced Flutter Animations",
-  "channelName": "Animation Pro",
-  "channelAvatar": "https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop",
-  "thumbnail": "https://images.pexels.com/photos/1431822/pexels-photo-1431822.jpeg?auto=compress&cs=tinysrgb&w=300&h=169&fit=crop",
-  "views": "654K",
-  "uploadTime": "5 days ago",
-
-  "duration": "18:22",
-  "type": "video"},
-    {
-  "id": "6",
-  "title": "Flutter State Management Guide",
-  "channelName": "Flutter Expert",
-  "channelAvatar": "https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop",
-  "thumbnail": "https://images.pexels.com/photos/317157/pexels-photo-317157.jpeg?auto=compress&cs=tinysrgb&w=300&h=169&fit=crop",
-  "views": "987K",
-  "uploadTime": "1 week ago",
-
-  "duration": "25:30",
-  "type": "video"},
-    {
-  "id": "7",
-  "title": "Dart Programming Fundamentals",
-  "channelName": "Dart Master",
-  "channelAvatar": "https://images.pexels.com/photos/1181467/pexels-photo-1181467.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop",
-  "thumbnail": "https://images.pexels.com/photos/618833/pexels-photo-618833.jpeg?auto=compress&cs=tinysrgb&w=300&h=169&fit=crop",
-  "views": "1.8M",
-  "uploadTime": "4 days ago",
-
-  "duration": "32:15",
-  "type": "video"},
-    {
-  "id": "8",
-  "title": "Mobile UI/UX Design",
-  "channelName": "Design Studio",
-  "channelAvatar": "https://images.pexels.com/photos/1181263/pexels-photo-1181263.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop",
-  "thumbnail": "https://images.pexels.com/photos/1279330/pexels-photo-1279330.jpeg?auto=compress&cs=tinysrgb&w=300&h=169&fit=crop",
-  "views": "743K",
-  "uploadTime": "6 days ago",
-
-  "duration": "28:45",
-  "type": "video"},
-    {
-  "id": "9",
-  "title": "Code Academy",
-  "channelName": "Code Academy",
-  "channelAvatar": "https://images.pexels.com/photos/1181345/pexels-photo-1181345.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop",
-  "subscribers": "2.1M subscribers",
-
-  "description": "Professional coding tutorials and courses",
-  "type": "channel"},
-    {
-  "id": "10",
-  "title": "Flutter Performance Optimization",
-  "channelName": "Performance Pro",
-  "channelAvatar": "https://images.pexels.com/photos/1181424/pexels-photo-1181424.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop",
-  "thumbnail": "https://images.pexels.com/photos/45201/kitty-cat-kitten-pet-45201.jpeg?auto=compress&cs=tinysrgb&w=300&h=169&fit=crop",
-  "views": "1.1M",
-  "uploadTime": "2 weeks ago",
-
-  "duration": "19:30",
-  "type": "video"},
-    {
-  "id": "11",
-  "title": "Cross-Platform Development",
-  "channelName": "Multi Platform",
-  "channelAvatar": "https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop",
-  "thumbnail": "https://images.pexels.com/photos/1080721/pexels-photo-1080721.jpeg?auto=compress&cs=tinysrgb&w=300&h=169&fit=crop",
-  "views": "892K",
-  "uploadTime": "1 week ago",
-
-  "duration": "35:20",
-  "type": "video"},
-    {
-  "id": "12",
-  "title": "App Development Trends 2024",
-  "channelName": "Tech Trends",
-  "channelAvatar": "https://images.pexels.com/photos/1181298/pexels-photo-1181298.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop",
-  "thumbnail": "https://images.pexels.com/photos/120049/pexels-photo-120049.jpeg?auto=compress&cs=tinysrgb&w=300&h=169&fit=crop",
-  "views": "1.5M",
-  "uploadTime": "3 days ago",
-
-  "duration": "24:10",
-  "type": "video"}
-  ];
+  // Results are fetched from API with asset fallback
 
   final List<String> _filters = ['All', 'Videos', 'Channels'];
 
@@ -249,25 +120,15 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
     });
 
     try {
-      await Future.delayed(const Duration(milliseconds: 800));
-      
-      final filteredResults = _mockSearchResults.where((result) {
-        final matchesQuery = (result['title'] as String)
-            .toLowerCase()
-            .contains(query.toLowerCase()) ||
-            (result['channelName'] as String)
-            .toLowerCase()
-            .contains(query.toLowerCase());
-        
-        if (_selectedFilter == 'All') return matchesQuery;
-        if (_selectedFilter == 'Videos') return matchesQuery && result['type'] == 'video';
-        if (_selectedFilter == 'Channels') return matchesQuery && result['type'] == 'channel';
-        
-        return false;
-      }).take(_resultsPerPage).toList();
+      final results = await VideoService.I.search(
+        query: query,
+        filter: _selectedFilter,
+        page: 1,
+        pageSize: _resultsPerPage,
+      );
 
       setState(() {
-        _searchResults = List.from(filteredResults);
+        _searchResults = List.from(results);
         _isLoading = false;
       });
 
@@ -293,29 +154,17 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
     });
 
     try {
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      final startIndex = _currentPage * _resultsPerPage;
-      final filteredResults = _mockSearchResults.where((result) {
-        final matchesQuery = (result['title'] as String)
-            .toLowerCase()
-            .contains(_currentQuery.toLowerCase()) ||
-            (result['channelName'] as String)
-            .toLowerCase()
-            .contains(_currentQuery.toLowerCase());
-        
-        if (_selectedFilter == 'All') return matchesQuery;
-        if (_selectedFilter == 'Videos') return matchesQuery && result['type'] == 'video';
-        if (_selectedFilter == 'Channels') return matchesQuery && result['type'] == 'channel';
-        
-        return false;
-      }).toList();
+      final nextPage = _currentPage + 1;
+      final results = await VideoService.I.search(
+        query: _currentQuery,
+        filter: _selectedFilter,
+        page: nextPage,
+        pageSize: _resultsPerPage,
+      );
 
-      if (startIndex < filteredResults.length) {
-        final newResults = filteredResults.skip(startIndex).take(_resultsPerPage).toList();
-        
+      if (results.isNotEmpty) {
         setState(() {
-          _searchResults.addAll(newResults);
+          _searchResults.addAll(results);
           _currentPage++;
           _isLoadingMore = false;
         });
@@ -349,7 +198,11 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
 
   void _onResultTap(Map<String, dynamic> result) {
     if (result['type'] == 'video') {
-      Navigator.pushNamed(context, '/video-player-screen');
+      Navigator.pushNamed(
+        context,
+        '/video-player-screen',
+        arguments: {'videoId': result['id']},
+      );
     }
   }
 

@@ -9,7 +9,7 @@ import 'package:sizer/sizer.dart';
 import '../widgets/custom_error_widget.dart';
 import 'core/app_export.dart';
 
-var backendURL = "https://videoshar7994back.builtwithrocket.new/log-error";
+String get backendURL => dotenv.env['BACKEND_LOG_URL']?.trim() ?? "";
 
 void main() async {
   FlutterError.onError = (details) {

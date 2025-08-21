@@ -6,6 +6,7 @@ import '../../core/app_export.dart';
 import './widgets/comments_section_widget.dart';
 import './widgets/video_info_widget.dart';
 import './widgets/video_player_widget.dart';
+import '../../core/services/video_service.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
   const VideoPlayerScreen({super.key});
@@ -27,80 +28,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> with TickerProvid
   late AnimationController _controlsAnimationController;
   late Animation<double> _controlsAnimation;
 
-  // Mock video data
-  final Map<String, dynamic> _videoData = {
-    "id": "1",
-    "title": "Amazing Sunset Timelapse in 4K - Nature's Beauty Captured",
-    "description": "Experience the breathtaking beauty of nature with this stunning 4K sunset timelapse. Shot over 3 hours in the mountains, this video captures the magical transition from day to night with vibrant colors painting the sky.",
-    "channelName": "Nature Explorer",
-    "channelAvatar": "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop",
-    "channelSubscribers": "2.3M",
-    "videoUrl": "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4",
-    "thumbnail": "https://images.pexels.com/photos/1431822/pexels-photo-1431822.jpeg?auto=compress&cs=tinysrgb&w=400&h=225&fit=crop",
-    "views": "2,345,678",
-    "likes": "45,234",
-    "dislikes": "892",
-    "uploadTime": "2 days ago",
-    "duration": "3:45",
-    "category": "Nature"
-  };
-
-  final List<Map<String, dynamic>> _comments = [
-    {
-  "id": "1",
-  "username": "NatureLover123",
-  "avatar": "https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop",
-  "comment": "Absolutely stunning! The colors in this timelapse are incredible. Nature never fails to amaze me.",
-  "likes": 234,
-
-  "timestamp": "2 hours ago",
-  "isLiked": false},
-    {
-  "id": "2",
-  "username": "PhotoPro",
-  "avatar": "https://images.pexels.com/photos/1181467/pexels-photo-1181467.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop",
-  "comment": "What camera did you use for this? The quality is amazing!",
-  "likes": 89,
-
-  "timestamp": "4 hours ago",
-  "isLiked": true},
-    {
-  "id": "3",
-  "username": "MountainHiker",
-  "avatar": "https://images.pexels.com/photos/1181345/pexels-photo-1181345.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop",
-  "comment": "I've been to this location! It's even more beautiful in person. Great work capturing this moment.",
-  "likes": 156,
-
-  "timestamp": "6 hours ago",
-  "isLiked": false},
-    {
-  "id": "4",
-  "username": "RelaxationSeeker",
-  "avatar": "https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop",
-  "comment": "This is so peaceful and calming. Perfect for meditation and relaxation.",
-  "likes": 67,
-
-  "timestamp": "8 hours ago",
-  "isLiked": false},
-    {
-  "id": "5",
-  "username": "TimelapseExpert",
-  "avatar": "https://images.pexels.com/photos/1181298/pexels-photo-1181298.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop",
-  "comment": "Excellent technique! The smooth transitions and color grading are top-notch.",
-  "likes": 198,
-
-  "timestamp": "10 hours ago",
-  "isLiked": true},
-    {
-  "id": "6",
-  "username": "SkyWatcher",
-  "avatar": "https://images.pexels.com/photos/1181424/pexels-photo-1181424.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop",
-  "comment": "The way the clouds move across the sky is mesmerizing. Nature's own art show!",
-  "likes": 112,
-
-  "timestamp": "12 hours ago",
-  "isLiked": false}
-  ];
+  Map<String, dynamic>? _videoData;
+  List<Map<String, dynamic>> _comments = [];
 
   @override
   void initState() {
@@ -134,10 +63,15 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> with TickerProvid
     });
 
     try {
-      // Simulate video loading
-      await Future.delayed(const Duration(seconds: 2));
-      
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      final String videoId = (args != null && args['videoId'] != null) ? args['videoId'] as String : '1';
+
+      final details = await VideoService.I.fetchVideoDetails(videoId);
+      final comments = await VideoService.I.fetchComments(videoId);
+
       setState(() {
+        _videoData = details;
+        _comments = comments;
         _isLoading = false;
       });
     } catch (e) {
@@ -246,7 +180,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> with TickerProvid
     }
     
     return VideoPlayerWidget(
-      videoData: _videoData,
+      videoData: _videoData!,
       isControlsVisible: _isControlsVisible,
       controlsAnimation: _controlsAnimation,
       onToggleControls: _toggleControls,
@@ -359,7 +293,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> with TickerProvid
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     VideoInfoWidget(
-                      videoData: _videoData,
+                      videoData: _videoData!,
                       isSubscribed: _isSubscribed,
                       isLiked: _isLiked,
                       isDisliked: _isDisliked,
