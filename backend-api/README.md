@@ -14,7 +14,7 @@ npm install
 ```
 
 2) Configure environment
-Create a `.env` file with:
+Create a `.env` file with (see `.env.example`):
 ```
 PORT=8080
 MONGO_URI=mongodb+srv://<user>:<pass>@cluster.mongodb.net/yourdb?retryWrites=true&w=majority
