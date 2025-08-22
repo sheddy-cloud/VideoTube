@@ -84,7 +84,6 @@ export async function uploadVideo(req, res, next) {
       Key: key,
       Body: videoFile.buffer,
       ContentType: videoFile.mimetype || 'video/mp4',
-      ACL: 'public-read',
     }));
     const publicUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${key}`;
 
@@ -97,7 +96,6 @@ export async function uploadVideo(req, res, next) {
         Key: tKey,
         Body: thumbFile.buffer,
         ContentType: thumbFile.mimetype || 'image/jpeg',
-        ACL: 'public-read',
       }));
       thumbUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${tKey}`;
     }

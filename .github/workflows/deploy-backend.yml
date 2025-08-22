@@ -14,7 +14,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prep target dir (clean)
+      - name: Prep target dir (preserve .env)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -23,9 +23,17 @@ jobs:
           port: ${{ secrets.EC2_PORT || 22 }}
           script: |
             set -e
-            mkdir -p "${{ secrets.EC2_PATH }}"
-            rm -rf "${{ secrets.EC2_PATH }}/backend-api"
             mkdir -p "${{ secrets.EC2_PATH }}/backend-api"
+            # Preserve existing .env if present
+            if [ -f "${{ secrets.EC2_PATH }}/backend-api/.env" ]; then
+              cp "${{ secrets.EC2_PATH }}/backend-api/.env" "/tmp/backend-api.env.$$"
+            fi
+            # Clean directory contents but keep directory and later restore .env
+            find "${{ secrets.EC2_PATH }}/backend-api" -mindepth 1 -maxdepth 1 ! -name '.env' -exec rm -rf {} +
+            # Restore .env
+            if [ -f "/tmp/backend-api.env.$$" ]; then
+              mv "/tmp/backend-api.env.$$" "${{ secrets.EC2_PATH }}/backend-api/.env"
+            fi
 
       - name: Upload backend files (SCP)
         uses: appleboy/scp-action@v0.1.7

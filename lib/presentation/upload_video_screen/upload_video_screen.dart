@@ -182,10 +182,16 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> with TickerProvid
         _isUploading = false;
       });
     } catch (e) {
+      String message = 'Upload failed. Please try again.';
+      try {
+        final err = e as dynamic;
+        final data = err.response?.data;
+        if (data is Map && data['error'] is String) message = data['error'] as String;
+      } catch (_) {}
       if (!mounted) return;
       setState(() {
         _isUploading = false;
-        _errorMessage = 'Upload failed. Please try again.';
+        _errorMessage = message;
       });
     }
   }
