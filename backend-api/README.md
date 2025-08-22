@@ -30,5 +30,20 @@ Storage now uses AWS S3.
 npm run dev
 ```
 
-## Deploy (Cloud Run)
-Deploy (example with Docker): build and push to ECR, deploy to ECS/Fargate or run on EC2/Elastic Beanstalk. Ensure instance/task role has S3 putObject permissions.
+## Deploy to EC2 (Nginx + PM2)
+1) Copy Nginx conf
+```
+sudo cp deploy/nginx/backend-api.conf /etc/nginx/sites-available/backend-api.conf
+sudo ln -s /etc/nginx/sites-available/backend-api.conf /etc/nginx/sites-enabled/backend-api.conf
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+2) Place `.env` in `backend-api/.env` on server with PORT, MONGO_URI, AWS_REGION, S3_BUCKET, JWT_SECRET
+
+3) Use PM2 with `ecosystem.config.js`:
+```
+pm2 startOrReload ecosystem.config.js --env production
+pm2 save
+```
+
+4) CI/CD: set GitHub secrets `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`, `EC2_PATH`, push to main.
