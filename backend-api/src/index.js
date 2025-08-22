@@ -27,7 +27,9 @@ app.use('/', logsRouter); // /log-error, /log-inspected-widget
 
 app.use((err, _req, res, _next) => {
 	console.error('Unhandled error:', err);
-	res.status(500).json({ error: 'Internal Server Error' });
+	const status = err.status || 500;
+	const message = err.message || 'Internal Server Error';
+	res.status(status).json({ error: message });
 });
 
 connectDb()
