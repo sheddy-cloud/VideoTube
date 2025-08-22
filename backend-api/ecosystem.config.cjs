@@ -2,6 +2,7 @@ module.exports = {
 	apps: [
 		{
 			name: 'backend-api',
+			cwd: __dirname,
 			script: 'src/index.js',
 			watch: false,
 			env: {
