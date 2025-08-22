@@ -18,13 +18,12 @@ Create a `.env` file with (see `.env.example`):
 ```
 PORT=8080
 MONGO_URI=mongodb+srv://<user>:<pass>@cluster.mongodb.net/yourdb?retryWrites=true&w=majority
-GCS_BUCKET=your-gcs-bucket-name
-GCP_PROJECT_ID=your-gcp-project-id
+AWS_REGION=us-east-1
+S3_BUCKET=your-s3-bucket
 JWT_SECRET=super-secret
-GOOGLE_APPLICATION_CREDENTIALS=/workspace/service-account.json
 ```
 
-Provide a Google Cloud service account with Storage permissions. For local dev, set `GOOGLE_APPLICATION_CREDENTIALS` to a JSON key path.
+Storage now uses AWS S3.
 
 ## Run locally
 ```
@@ -32,7 +31,4 @@ npm run dev
 ```
 
 ## Deploy (Cloud Run)
-```
-gcloud builds submit --tag gcr.io/PROJECT_ID/backend-api
-gcloud run deploy backend-api --image gcr.io/PROJECT_ID/backend-api --platform managed --allow-unauthenticated --region REGION
-```
+Deploy (example with Docker): build and push to ECR, deploy to ECS/Fargate or run on EC2/Elastic Beanstalk. Ensure instance/task role has S3 putObject permissions.

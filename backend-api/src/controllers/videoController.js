@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Storage } from '@google-cloud/storage';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import path from 'path';
 import Video from '../models/Video.js';
 import Comment from '../models/Comment.js';
 
@@ -67,22 +68,23 @@ export async function postComment(req, res, next) {
 export async function uploadVideo(req, res, next) {
   try {
     if (!req.file) return res.status(400).json({ error: 'file is required' });
-    const bucketName = process.env.GCS_BUCKET;
-    if (!bucketName) return res.status(500).json({ error: 'GCS_BUCKET not configured' });
+    const bucketName = process.env.S3_BUCKET;
+    const region = process.env.AWS_REGION;
+    if (!bucketName || !region) return res.status(500).json({ error: 'S3 config missing' });
 
-    const storage = new Storage();
+    const s3 = new S3Client({ region });
     const id = uuidv4();
-    const objectName = `uploads/${id}`;
+    const ext = path.extname(req.file.originalname || '') || '.mp4';
+    const key = `uploads/${id}${ext}`;
 
-    const bucket = storage.bucket(bucketName);
-    const file = bucket.file(objectName);
-    await file.save(req.file.buffer, {
-      resumable: false,
-      contentType: req.file.mimetype || 'video/mp4',
-      public: true,
-      metadata: { cacheControl: 'public, max-age=31536000' },
-    });
-    const publicUrl = `https://storage.googleapis.com/${bucketName}/${objectName}`;
+    await s3.send(new PutObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+      Body: req.file.buffer,
+      ContentType: req.file.mimetype || 'video/mp4',
+      ACL: 'public-read',
+    }));
+    const publicUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${key}`;
 
     const { title, description, visibility, tags = [], category = 'All' } = req.body;
     const video = await Video.create({
