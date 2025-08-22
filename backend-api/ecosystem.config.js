@@ -3,7 +3,6 @@ module.exports = {
 		{
 			name: 'backend-api',
 			script: 'src/index.js',
-			node_args: '--require dotenv/config',
 			watch: false,
 			env: {
 				NODE_ENV: 'production',
