@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
@@ -14,6 +15,25 @@ class ThumbnailSelectorWidget extends StatelessWidget {
     required this.selectedIndex,
     required this.onThumbnailSelected,
   });
+
+  Widget _buildThumb(String pathOrUrl) {
+    if (pathOrUrl.startsWith('http')) {
+      return CustomImageWidget(
+        imageUrl: pathOrUrl,
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.cover,
+      );
+    }
+    final file = File(pathOrUrl);
+    return Image.file(
+      file,
+      width: double.infinity,
+      height: double.infinity,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => Container(color: AppTheme.lightTheme.colorScheme.surfaceContainerHighest),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,12 +75,7 @@ class ThumbnailSelectorWidget extends StatelessWidget {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(2.w),
-                        child: CustomImageWidget(
-                          imageUrl: thumbnails[index],
-                          width: 30.w,
-                          height: 20.w * 9 / 16,
-                          fit: BoxFit.cover,
-                        ),
+                        child: _buildThumb(thumbnails[index]),
                       ),
                       
                       if (isSelected)

@@ -45,7 +45,16 @@ class _AuthScreenState extends State<AuthScreen> {
       if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e) {
-      setState(() { _error = 'Authentication failed. Please try again.'; });
+      String message = 'Authentication failed. Please try again.';
+      try {
+        // Extract server message from Dio error
+        final err = e as dynamic;
+        final data = err.response?.data;
+        if (data is Map && data['error'] is String) {
+          message = data['error'] as String;
+        }
+      } catch (_) {}
+      setState(() { _error = message; });
     } finally {
       if (mounted) setState(() { _loading = false; });
     }

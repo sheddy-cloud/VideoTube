@@ -9,6 +9,8 @@ import './widgets/upload_step_widget.dart';
 import './widgets/video_form_widget.dart';
 import '../../core/services/upload_service.dart';
 import 'package:dio/dio.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:path_provider/path_provider.dart';
 
 class UploadVideoScreen extends StatefulWidget {
   const UploadVideoScreen({super.key});
@@ -71,16 +73,43 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> with TickerProvid
       _selectedVideoPath = videoPath;
       _errorMessage = null;
       _currentStep = 1;
-      // Minimal metadata from path; server can probe actual details after upload
-      _selectedVideoMeta = {
-        'fileName': videoPath.split('/').last,
-        'size': '--',
-        'duration': '--',
-        'format': 'MP4',
-        'resolution': '--',
-        'thumbnails': <String>[],
-      };
     });
+    _generateThumbnails(videoPath);
+  }
+
+  Future<void> _generateThumbnails(String path) async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final thumbs = <String>[];
+      // Generate 3 frames at ~10%, 50%, 90%
+      final positions = [0.1, 0.5, 0.9];
+      for (final p in positions) {
+        final thumb = await VideoThumbnail.thumbnailFile(
+          video: path,
+          thumbnailPath: tempDir.path,
+          imageFormat: ImageFormat.JPEG,
+          quality: 75,
+        );
+        if (thumb != null) thumbs.add(thumb);
+      }
+      setState(() {
+        _selectedThumbnailIndex = 0;
+        _selectedVideoMeta = {
+          'fileName': path.split('/').last,
+          'size': '--',
+          'duration': '--',
+          'format': 'MP4',
+          'resolution': '--',
+          'thumbnails': thumbs,
+        };
+      });
+    } catch (_) {
+      // If generation fails, leave empty list
+      setState(() {
+        _selectedVideoMeta ??= {};
+        _selectedVideoMeta!['thumbnails'] = <String>[];
+      });
+    }
   }
 
   void _onFormSubmitted() {
@@ -125,6 +154,8 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> with TickerProvid
     });
     _cancelToken = CancelToken();
     try {
+      final thumbs = ((_selectedVideoMeta?['thumbnails'] as List?)?.cast<String>()) ?? const <String>[];
+      final selectedThumb = thumbs.isNotEmpty ? thumbs[_selectedThumbnailIndex.clamp(0, thumbs.length - 1)] : null;
       final videoId = await UploadService.I.uploadVideo(
         filePath: _selectedVideoPath!,
         title: _titleController.text.trim(),
@@ -132,6 +163,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> with TickerProvid
         visibility: _visibility,
         tags: _tagsController.text.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).toList(),
         selectedThumbnailIndex: _selectedThumbnailIndex,
+        thumbnailPath: selectedThumb,
         cancelToken: _cancelToken,
         onProgress: (sent, total) {
           if (total > 0 && mounted && _isUploading && !_isPaused) {

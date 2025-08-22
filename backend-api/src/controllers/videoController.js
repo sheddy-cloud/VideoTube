@@ -67,36 +67,52 @@ export async function postComment(req, res, next) {
 
 export async function uploadVideo(req, res, next) {
   try {
-    if (!req.file) return res.status(400).json({ error: 'file is required' });
+    const videoFile = (req.files?.file && req.files.file[0]) || req.file;
+    const thumbFile = req.files?.thumbnail && req.files.thumbnail[0];
+    if (!videoFile) return res.status(400).json({ error: 'file is required' });
     const bucketName = process.env.S3_BUCKET;
     const region = process.env.AWS_REGION;
     if (!bucketName || !region) return res.status(500).json({ error: 'S3 config missing' });
 
     const s3 = new S3Client({ region });
     const id = uuidv4();
-    const ext = path.extname(req.file.originalname || '') || '.mp4';
+    const ext = path.extname(videoFile.originalname || '') || '.mp4';
     const key = `uploads/${id}${ext}`;
 
     await s3.send(new PutObjectCommand({
       Bucket: bucketName,
       Key: key,
-      Body: req.file.buffer,
-      ContentType: req.file.mimetype || 'video/mp4',
+      Body: videoFile.buffer,
+      ContentType: videoFile.mimetype || 'video/mp4',
       ACL: 'public-read',
     }));
     const publicUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${key}`;
 
+    let thumbUrl = '';
+    if (thumbFile) {
+      const tExt = path.extname(thumbFile.originalname || '') || '.jpg';
+      const tKey = `uploads/${id}-thumb${tExt}`;
+      await s3.send(new PutObjectCommand({
+        Bucket: bucketName,
+        Key: tKey,
+        Body: thumbFile.buffer,
+        ContentType: thumbFile.mimetype || 'image/jpeg',
+        ACL: 'public-read',
+      }));
+      thumbUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${tKey}`;
+    }
+
     const { title, description, visibility, tags = [], category = 'All' } = req.body;
     const video = await Video.create({
       videoId: id,
-      title: title || req.file.originalname,
+      title: title || videoFile.originalname,
       description: description || '',
       visibility: visibility || 'Public',
       tags: Array.isArray(tags) ? tags : String(tags || '').split(',').map(t => t.trim()).filter(Boolean),
       category,
       channelName: req.user?.email || 'Uploader',
       channelAvatar: '',
-      thumbnail: '',
+      thumbnail: thumbUrl,
       videoUrl: publicUrl,
       duration: '--',
     });
