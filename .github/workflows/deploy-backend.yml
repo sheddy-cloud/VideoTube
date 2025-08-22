@@ -13,30 +13,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy via SSH
+      - name: Upload backend files (SCP)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_PORT || 22 }}
+          source: "backend-api/*"
+          target: "${{ secrets.EC2_PATH }}/backend-api"
+          strip_components: 1
+
+      - name: Deploy via SSH (PM2 reload)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_PORT || 22 }}
+          debug: true
           script: |
             set -e
-            # Ensure repo exists
-            if [ ! -d "${{ secrets.EC2_PATH }}" ]; then
-              mkdir -p "${{ secrets.EC2_PATH }}"
-              git clone https://github.com/sheddy-cloud/VideoTube.git "${{ secrets.EC2_PATH }}"
-            fi
-            cd "${{ secrets.EC2_PATH }}"
-            git fetch origin main
-            git reset --hard origin/main
-            cd backend-api
-            # Install PM2 if missing
+            cd "${{ secrets.EC2_PATH }}/backend-api"
             if ! command -v pm2 >/dev/null 2>&1; then
               sudo npm install -g pm2
             fi
-            # Install deps
             npm ci || npm install
-            # Start or reload via PM2 (expects .env on server)
             pm2 startOrReload ecosystem.config.js --env production || pm2 start ecosystem.config.js --env production
             pm2 save
 
