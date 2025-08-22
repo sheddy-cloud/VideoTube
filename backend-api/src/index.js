@@ -8,6 +8,7 @@ import authRouter from './routes/auth.js';
 import videosRouter from './routes/videos.js';
 import searchRouter from './routes/search.js';
 import logsRouter from './routes/logs.js';
+import usersRouter from './routes/users.js';
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.use('/auth', authRouter);
 app.use('/videos', videosRouter);
 app.use('/search', searchRouter);
 app.use('/', logsRouter); // /log-error, /log-inspected-widget
+app.use('/users', usersRouter);
 
 app.use((err, _req, res, _next) => {
 	console.error('Unhandled error:', err);

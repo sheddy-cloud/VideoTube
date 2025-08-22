@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../../core/app_export.dart';
 
@@ -37,7 +39,7 @@ class VideoCardWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildThumbnail(),
-            _buildVideoInfo(),
+            _buildVideoInfo(context),
           ],
         ),
       ),
@@ -104,7 +106,7 @@ class VideoCardWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildVideoInfo() {
+  Widget _buildVideoInfo(BuildContext context) {
     return Padding(
       padding: EdgeInsets.all(3.w),
       child: Row(
@@ -195,9 +197,7 @@ class VideoCardWidget extends StatelessWidget {
           
           // More options button
           IconButton(
-            onPressed: () {
-              // Show more options
-            },
+            onPressed: () => _showOptions(context),
             icon: CustomIconWidget(
               iconName: 'more_vert',
               color: AppTheme.lightTheme.colorScheme.onSurfaceVariant,
@@ -212,5 +212,73 @@ class VideoCardWidget extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _showOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.lightTheme.colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(4.w)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.download_outlined),
+                title: const Text('Download'),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await _downloadVideo(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.watch_later_outlined),
+                title: const Text('Save to Watch later'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Saved to Watch later')),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.flag_outlined),
+                title: const Text('Report'),
+                onTap: () => Navigator.pop(ctx),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _downloadVideo(BuildContext context) async {
+    final url = (video['videoUrl'] ?? '') as String;
+    if (url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Video URL not available')),
+      );
+      return;
+    }
+    try {
+      final dir = await getTemporaryDirectory();
+      final safeTitle = (video['title'] as String).replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+      final savePath = '${dir.path}/$safeTitle.mp4';
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Downloading...')),
+      );
+      await Dio().download(url, savePath);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Saved to: $savePath')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Download failed')),
+      );
+    }
   }
 }

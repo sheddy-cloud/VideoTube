@@ -457,7 +457,6 @@ class _HomeFeedScreenState extends State<HomeFeedScreen> {
       backgroundColor: AppTheme.lightTheme.scaffoldBackgroundColor,
       body: Column(
         children: [
-          _buildHeader(),
           _buildCategoryStrip(),
           Expanded(
             child: _buildVideoList(),

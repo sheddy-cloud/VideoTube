@@ -24,6 +24,25 @@ class AuthService {
     await prefs.remove(_tokenKey);
   }
 
+  Future<Map<String, dynamic>> fetchMe() async {
+    final token = await getToken();
+    final res = await ApiClient.I.dio.get(
+      '/users/me',
+      options: Options(headers: token != null && token.isNotEmpty ? {'Authorization': 'Bearer $token'} : null),
+    );
+    return (res.data as Map<String, dynamic>);
+  }
+
+  Future<Map<String, dynamic>> updateMe({required String name}) async {
+    final token = await getToken();
+    final res = await ApiClient.I.dio.patch(
+      '/users/me',
+      data: {'name': name},
+      options: Options(headers: token != null && token.isNotEmpty ? {'Authorization': 'Bearer $token'} : null),
+    );
+    return (res.data as Map<String, dynamic>);
+  }
+
   Future<void> signup({required String name, required String email, required String password}) async {
     await ApiClient.I.dio.post('/auth/signup', data: {
       'name': name,
