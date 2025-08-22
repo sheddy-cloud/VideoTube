@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 
 import 'api_client.dart';
+import 'auth_service.dart';
 
 class UploadService {
   UploadService._();
@@ -31,12 +32,16 @@ class UploadService {
       'file': await MultipartFile.fromFile(file.path, filename: fileName, contentType: DioMediaType.parse('video/mp4')),
     });
 
+    final token = await AuthService.I.getToken();
     final Response res = await ApiClient.I.dio.post(
       '/videos/upload',
       data: formData,
       cancelToken: cancelToken,
       onSendProgress: onProgress,
-      options: Options(contentType: 'multipart/form-data'),
+      options: Options(
+        contentType: 'multipart/form-data',
+        headers: token != null && token.isNotEmpty ? {'Authorization': 'Bearer $token'} : null,
+      ),
     );
 
     final data = res.data as Map<String, dynamic>;

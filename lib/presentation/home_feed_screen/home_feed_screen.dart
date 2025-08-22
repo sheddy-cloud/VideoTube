@@ -5,6 +5,7 @@ import '../../core/app_export.dart';
 import './widgets/category_chip_widget.dart';
 import './widgets/video_card_widget.dart';
 import '../../core/services/video_service.dart';
+import '../../core/services/auth_service.dart';
 
 class HomeFeedScreen extends StatefulWidget {
   const HomeFeedScreen({super.key});
@@ -137,7 +138,13 @@ class _HomeFeedScreenState extends State<HomeFeedScreen> {
     Navigator.pushNamed(context, '/search-results-screen');
   }
 
-  void _onUploadTap() {
+  Future<void> _onUploadTap() async {
+    final loggedIn = await AuthService.I.isLoggedIn();
+    if (!loggedIn) {
+      final result = await Navigator.pushNamed(context, '/auth');
+      if (result != true) return;
+    }
+    if (!mounted) return;
     Navigator.pushNamed(context, '/upload-video-screen');
   }
 
