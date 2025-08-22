@@ -21,6 +21,7 @@ dependencies:
   flutter_dotenv: ^5.2.1
   web: any
   video_thumbnail: ^0.5.3
+  video_player: ^2.7.0
 dev_dependencies: 
   flutter_test: 
     sdk: flutter

@@ -130,7 +130,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen> {
     Navigator.pushNamed(
       context,
       '/video-player-screen',
-      arguments: {'videoId': video['id']},
+      arguments: {'videoId': video['id'], 'video': video},
     );
   }
 
