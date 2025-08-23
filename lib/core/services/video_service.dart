@@ -63,6 +63,18 @@ class VideoService {
 		}
 	}
 
+	Future<String> getPlaybackUrl({required String videoId, String? fallbackUrl}) async {
+		try {
+			final Response res = await ApiClient.I.dio.get('/videos/$videoId/url');
+			final data = (res.data as Map<String, dynamic>);
+			final url = (data['url'] as String?)?.trim() ?? '';
+			if (url.isNotEmpty) return url;
+		} on DioException {
+			// ignore and fall back
+		}
+		return (fallbackUrl ?? '').trim();
+	}
+
 	// Asset fallbacks use the current hardcoded JSON-like structures
 	Future<List<Map<String, dynamic>>> _loadHomeFeedFromAssets({required String category, required int page, required int pageSize}) async {
 		final String raw = await rootBundle.loadString('assets/home_feed_mock.json');

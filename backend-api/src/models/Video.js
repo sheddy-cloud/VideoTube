@@ -12,6 +12,8 @@ const videoSchema = new mongoose.Schema(
     channelAvatar: { type: String, default: '' },
     thumbnail: { type: String, default: '' },
     videoUrl: { type: String, required: true },
+    // Optional: store S3 key to avoid parsing URLs and enable easy re-signing
+    s3Key: { type: String, default: '' },
     duration: { type: String, default: '--' },
     views: { type: Number, default: 0 },
   },

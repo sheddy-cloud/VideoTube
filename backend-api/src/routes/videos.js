@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { authRequired } from '../middlewares/auth.js';
-import { listVideos, getVideo, listComments, postComment, uploadVideo } from '../controllers/videoController.js';
+import { listVideos, getVideo, listComments, postComment, uploadVideo, getVideoPlaybackUrl } from '../controllers/videoController.js';
 
 const router = Router();
 const upload = multer({
@@ -22,6 +22,7 @@ router.post('/upload', authRequired, upload.fields([
   { name: 'file', maxCount: 1 },
   { name: 'thumbnail', maxCount: 1 },
 ]), uploadVideo);
+router.get('/:id/url', getVideoPlaybackUrl);
 
 export default router;
 

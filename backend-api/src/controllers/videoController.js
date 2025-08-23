@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import path from 'path';
 import Video from '../models/Video.js';
 import Comment from '../models/Comment.js';
@@ -112,9 +113,37 @@ export async function uploadVideo(req, res, next) {
       channelAvatar: '',
       thumbnail: thumbUrl,
       videoUrl: publicUrl,
+      s3Key: key,
       duration: '--',
     });
     return res.json({ videoId: video.videoId, url: publicUrl });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+export async function getVideoPlaybackUrl(req, res, next) {
+  try {
+    const bucketName = process.env.S3_BUCKET;
+    const region = process.env.AWS_REGION;
+    if (!bucketName || !region) return res.status(500).json({ error: 'S3 config missing' });
+
+    const v = await Video.findOne({ videoId: req.params.id }).lean();
+    if (!v) return res.status(404).json({ error: 'Not found' });
+
+    // Derive S3 object key from stored URL (fallback until s3Key is stored explicitly)
+    let key = '';
+    try {
+      const u = new URL(v.videoUrl);
+      key = u.pathname.startsWith('/') ? u.pathname.slice(1) : u.pathname;
+    } catch {
+      return res.status(500).json({ error: 'Invalid video URL stored' });
+    }
+
+    const s3 = new S3Client({ region });
+    const command = new GetObjectCommand({ Bucket: bucketName, Key: key });
+    const url = await getSignedUrl(s3, command, { expiresIn: 60 * 60 }); // 1 hour
+    return res.json({ url, expiresIn: 3600 });
   } catch (err) {
     return next(err);
   }

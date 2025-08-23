@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
+import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/app_export.dart';
+import '../../../core/services/video_service.dart';
 
 class VideoCardWidget extends StatelessWidget {
   final Map<String, dynamic> video;
@@ -195,6 +198,17 @@ class VideoCardWidget extends StatelessWidget {
             ),
           ),
           
+          // Share button
+          IconButton(
+            onPressed: () => _showShare(context),
+            icon: const Icon(Icons.share_outlined),
+            padding: EdgeInsets.all(1.w),
+            constraints: BoxConstraints(
+              minWidth: 8.w,
+              minHeight: 8.w,
+            ),
+            color: AppTheme.lightTheme.colorScheme.onSurfaceVariant,
+          ),
           // More options button
           IconButton(
             onPressed: () => _showOptions(context),
@@ -253,6 +267,63 @@ class VideoCardWidget extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Future<void> _showShare(BuildContext context) async {
+    final String id = (video['id'] ?? '').toString();
+    // Prefer a presigned URL if bucket is private; else fall back to stored videoUrl
+    final String fallback = (video['videoUrl'] ?? '').toString();
+    final String url = await VideoService.I.getPlaybackUrl(videoId: id, fallbackUrl: fallback);
+    if (url.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Share link not available')),
+        );
+      }
+      return;
+    }
+
+    // Compose WhatsApp deeplink and copy/share options
+    final Uri wa = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(url)}');
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.lightTheme.colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(4.w)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.copy_all_outlined),
+              title: const Text('Copy link'),
+              onTap: () async {
+                Navigator.pop(ctx);
+                await Clipboard.setData(ClipboardData(text: url));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Link copied')),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.share_outlined),
+              title: const Text('Share to WhatsApp'),
+              onTap: () async {
+                Navigator.pop(ctx);
+                if (await canLaunchUrl(wa)) {
+                  await launchUrl(wa, mode: LaunchMode.externalApplication);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('WhatsApp not available')),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
